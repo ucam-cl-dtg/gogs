@@ -21,6 +21,7 @@ import (
 	"github.com/gogits/gogs/pkg/form"
 	"github.com/gogits/gogs/pkg/mailer"
 	"github.com/gogits/gogs/pkg/setting"
+	"github.com/gogits/gogs/pkg/tool"
 )
 
 const (
@@ -65,10 +66,16 @@ func RavenAuthenticate(c *context.Context) (bool) {
 		if !errors.IsUserNotExist(getUserErr) {
 			return false
 		}
+
+		passwd, passwdErr := tool.RandomString(24)
+		if passwdErr != nil {
+			return false
+		}
+
 		u = &models.User{
 			Name:     crsid,
 			Email:    fmt.Sprintf("%s@cam.ac.uk",crsid),
-			Passwd:   "CHANGETHIS",
+			Passwd:   passwd,
 			IsActive: true,
 		}
 
