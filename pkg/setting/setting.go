@@ -77,6 +77,7 @@ var (
 	EnableGzip           bool
 	LandingPageURL       LandingPage
 	UnixSocketPermission uint32
+	RavenHeaderKey       string
 
 	HTTP struct {
 		AccessControlAllowOrigin string
@@ -487,6 +488,8 @@ func NewContext() {
 	default:
 		LandingPageURL = LANDING_PAGE_HOME
 	}
+
+	RavenHeaderKey = sec.Key("RAVEN_HEADER_KEY").String()
 
 	SSH.RootPath = path.Join(homeDir, ".ssh")
 	SSH.ServerCiphers = sec.Key("SSH_SERVER_CIPHERS").Strings(",")

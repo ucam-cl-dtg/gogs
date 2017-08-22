@@ -5,8 +5,12 @@
 package user
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/go-macaron/captcha"
 	log "gopkg.in/clog.v1"
@@ -29,10 +33,64 @@ const (
 	RESET_PASSWORD           = "user/auth/reset_passwd"
 )
 
+func ComputeHmacSha1(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha1.New, key)
+	h.Write([]byte(message))
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+func RavenAuthenticate(c *context.Context) (bool) {
+	uname := c.Req.Header.Get("X-AAPrincipal")
+	if len(uname) == 0 {
+		return false
+	}
+
+	parts := strings.Split(uname," ")
+	if len(parts) != 2 {
+		return false
+	}
+
+	hmacFromRaven := parts[0]
+	crsid := parts[1]
+	hmacComputed := ComputeHmacSha1(fmt.Sprintf("%s%s",crsid,setting.RavenHeaderKey),setting.RavenHeaderKey)
+
+	if hmacFromRaven != hmacComputed {
+		log.Warn("HMAC from Raven (%s) doesn't match computed (%s)",hmacFromRaven, hmacComputed)
+		return false
+	}
+
+	u, getUserErr := models.GetUserByName(crsid)
+	if getUserErr != nil {
+		if !errors.IsUserNotExist(getUserErr) {
+			return false
+		}
+		u = &models.User{
+			Name:     crsid,
+			Email:    fmt.Sprintf("%s@cam.ac.uk",crsid),
+			Passwd:   "CHANGETHIS",
+			IsActive: true,
+		}
+
+		if err := models.CreateUser(u); err != nil {
+			return false;
+		}
+	}
+
+	c.Session.Set("uid", u.ID)
+	c.Session.Set("uname", u.Name)
+
+	return true
+}
+
 // AutoLogin reads cookie and try to auto-login.
 func AutoLogin(c *context.Context) (bool, error) {
 	if !models.HasEngine {
 		return false, nil
+	}
+
+	if RavenAuthenticate(c) {
+		return true, nil
 	}
 
 	uname := c.GetCookie(setting.CookieUserName)
