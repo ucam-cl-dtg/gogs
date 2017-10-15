@@ -1361,17 +1361,20 @@ func updateRepository(e Engine, repo *Repository, visibilityChanged bool) (err e
 			}
 		}
 
+		// ACR31 - all forked repos are private
+		/*
 		forkRepos, err := getRepositoriesByForkID(e, repo.ID)
 		if err != nil {
 			return fmt.Errorf("getRepositoriesByForkID: %v", err)
 		}
+
 		for i := range forkRepos {
 			forkRepos[i].IsPrivate = repo.IsPrivate
 			if err = updateRepository(e, forkRepos[i], true); err != nil {
 				return fmt.Errorf("updateRepository[%d]: %v", forkRepos[i].ID, err)
 			}
 		}
-
+		*/
 		// Change visibility of generated actions
 		if _, err = e.Where("repo_id = ?", repo.ID).Cols("is_private").Update(&Action{IsPrivate: repo.IsPrivate}); err != nil {
 			return fmt.Errorf("change action visibility of repository: %v", err)
@@ -2276,7 +2279,9 @@ func ForkRepository(doer, owner *User, baseRepo *Repository, name, desc string) 
 		LowerName:     strings.ToLower(name),
 		Description:   desc,
 		DefaultBranch: baseRepo.DefaultBranch,
-		IsPrivate:     baseRepo.IsPrivate,
+//		IsPrivate:     baseRepo.IsPrivate,
+//		ACR31 - all forks private
+		IsPrivate:     true,
 		IsFork:        true,
 		ForkID:        baseRepo.ID,
 	}

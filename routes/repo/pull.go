@@ -53,7 +53,10 @@ func parseBaseRepository(c *context.Context) *models.Repository {
 
 	c.Data["repo_name"] = baseRepo.Name
 	c.Data["description"] = baseRepo.Description
-	c.Data["IsPrivate"] = baseRepo.IsPrivate
+
+	// c.Data["IsPrivate"] = baseRepo.IsPrivate
+	// ACR31 - all forks are private
+	c.Data["IsPrivate"] = true
 
 	if err = baseRepo.GetOwner(); err != nil {
 		c.ServerError("GetOwner", err)

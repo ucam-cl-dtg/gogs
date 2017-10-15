@@ -82,7 +82,9 @@ func SettingsPost(c *context.Context, f form.RepoSetting) {
 
 		// Visibility of forked repository is forced sync with base repository.
 		if repo.IsFork {
-			f.Private = repo.BaseRepo.IsPrivate
+			// f.Private = repo.BaseRepo.IsPrivate
+			// ACR31 - forks are private
+			f.Private = true
 		}
 
 		visibilityChanged := repo.IsPrivate != f.Private
